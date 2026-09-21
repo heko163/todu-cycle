@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">循环提醒</string>
+    <string name="channel_reminder_name">循环提醒</string>
+    <string name="channel_reminder_desc">任务到点提醒与未完成时的升级提醒</string>
+    <string name="channel_persistent_name">常驻提醒</string>
+    <string name="channel_persistent_desc">常驻通知栏、直到任务完成</string>
+</resources>

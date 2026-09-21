@@ -1,0 +1,6 @@
+# gradlew 必须保持 LF 行尾，否则 Linux/macOS 执行会报 bad interpreter
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+# 其余文本文件由 Git 自动归一化，入库统一为 LF
+* text=auto
