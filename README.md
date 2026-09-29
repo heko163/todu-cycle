@@ -2,6 +2,7 @@
 
 > 一个只做「循环提醒」这一件事的 Android 待办应用：每天 / 每周 / 每月 / 每年重复，**没做完就一直提醒到你完成为止**。
 
+<img width="2480" height="1680" alt="67c61e57c8be7949c2a2c875890fa56c_preview_raw=true" src="https://github.com/user-attachments/assets/cd09c475-941d-4eda-9261-bbd86c122db9" />
 
 ## ✨ 特性
 
