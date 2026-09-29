@@ -1,5 +1,9 @@
 package com.aiso.loopreminder.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,7 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -29,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +64,7 @@ import com.aiso.loopreminder.ui.theme.TextPrimary
 import com.aiso.loopreminder.ui.theme.TextSecondary
 import com.aiso.loopreminder.ui.viewmodel.TaskViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 private data class CatRow(
     val id: Long,
@@ -69,6 +79,29 @@ fun CategoryScreen(navController: NavController, vm: TaskViewModel) {
     val tasks by vm.tasks.collectAsStateWithLifecycle()
     val categories by vm.categories.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+
+    var showMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri ?: return@rememberLauncherForActivityResult
+        vm.exportBackup(uri)
+        Toast.makeText(context, "已导出备份文件", Toast.LENGTH_SHORT).show()
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri ?: return@rememberLauncherForActivityResult
+        vm.importBackup(uri) { imported, cats ->
+            if (imported < 0) {
+                Toast.makeText(context, "导入失败：文件无法读取或格式不正确", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(context, "已导入 $imported 项待办、$cats 个分类", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     var showDialog by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Category?>(null) }
@@ -99,13 +132,39 @@ fun CategoryScreen(navController: NavController, vm: TaskViewModel) {
         if (uncat > 0) add(CatRow(0L, "未分类", TextSecondary, uncat, true))
     }
 
-    Scaffold(bottomBar = { LoopBottomBar(navController) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("待办分类", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextPrimary) },
+                actions = {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "更多", tint = TextPrimary)
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("导出备份", color = TextPrimary) },
+                            onClick = {
+                                showMenu = false
+                                exportLauncher.launch("loop-reminder-backup-${LocalDate.now()}.json")
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("导入备份", color = TextPrimary) },
+                            onClick = {
+                                showMenu = false
+                                importLauncher.launch(arrayOf("application/json"))
+                            }
+                        )
+                    }
+                }
+            )
+        },
+        bottomBar = { LoopBottomBar(navController) }
+    ) { padding ->
         Column(
             Modifier.fillMaxSize().background(Cream).padding(padding)
                 .verticalScroll(rememberScrollState()).padding(20.dp)
         ) {
-            Text("待办分类", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Spacer(Modifier.height(4.dp))
             Text(
                 "共 ${categories.size} 个分类 · 点开查看具体待办",
                 fontSize = 14.sp, color = TextSecondary

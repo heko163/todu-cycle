@@ -12,6 +12,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE active = 1 ORDER BY timeMinuteOfDay ASC")
     suspend fun getActive(): List<Task>
 
+    @Query("SELECT * FROM tasks")
+    suspend fun getAll(): List<Task>
+
     @Query("SELECT * FROM tasks WHERE id = :id")
     fun observeById(id: Long): Flow<Task?>
 
