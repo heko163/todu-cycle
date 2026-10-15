@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Task::class, Category::class], version = 3, exportSchema = false)
+@Database(entities = [Task::class, Category::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
@@ -30,6 +30,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v3 -> v4: 每月/每年日期从单选改为多选（新增逗号分隔列表列，旧单选数据回填，不清库）。
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN monthDays TEXT NOT NULL DEFAULT '1'")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN yearDays TEXT NOT NULL DEFAULT '1'")
+                db.execSQL("UPDATE tasks SET monthDays = CAST(monthDay AS TEXT)")
+                db.execSQL("UPDATE tasks SET yearDays = CAST(yearDay AS TEXT)")
+            }
+        }
+
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -37,7 +47,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "loop_reminder.db"
                 )
-                    .addMigrations(MIGRATION_2_3)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .build().also { INSTANCE = it }
             }

@@ -9,4 +9,6 @@
     <color name="text_primary">#0A1628</color>
     <color name="text_secondary">#6B7280</color>
     <color name="surface">#FFFFFF</color>
+    <!-- 自适应图标背景层（与 2.jpg 图像底色接近，遮罩边缘/视差时自然衔接） -->
+    <color name="launcher_bg">#F2F5F8</color>
 </resources>

@@ -11,9 +11,11 @@ data class Task(
     val recurrence: RecurrenceType = RecurrenceType.DAILY,
     val timeMinuteOfDay: Int = 10 * 60,            // minutes from midnight
     val repeatDays: Set<DayOfWeek> = emptySet(),   // for WEEKLY
-    val monthDay: Int = 1,                          // 每月几日 (1-31)，用于 MONTHLY
+    val monthDay: Int = 1,                          // 兼容字段：MONTHLY 主日（= monthDays.first()），保留以稳定数据库 schema 与旧备份兼容
+    val monthDays: List<Int> = listOf(1),           // 每月几日（可多选，1-31），用于 MONTHLY
     val yearMonth: Int = 1,                         // 每年几月 (1-12)，用于 YEARLY
-    val yearDay: Int = 1,                           // 每年几日 (1-31)，用于 YEARLY
+    val yearDay: Int = 1,                           // 兼容字段：YEARLY 主日（= yearDays.first()）
+    val yearDays: List<Int> = listOf(1),            // 每年几日（可多选，1-31），用于 YEARLY
     val advanceNoticeMinutes: Int = 0,             // 0 = no advance notice
     val reminderMode: String = "通知 + 声音",
     val escalateEnabled: Boolean = false,          // 未完成时持续提醒

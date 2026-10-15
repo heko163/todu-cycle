@@ -52,7 +52,7 @@ object Seed {
                 title = "交房租",
                 recurrence = RecurrenceType.MONTHLY,
                 timeMinuteOfDay = 9 * 60,
-                monthDay = 1,
+                monthDays = listOf(1),
                 categoryId = lifeId
             ),
             Task(
@@ -60,7 +60,7 @@ object Seed {
                 recurrence = RecurrenceType.YEARLY,
                 timeMinuteOfDay = 8 * 60,
                 yearMonth = 1,
-                yearDay = 1,
+                yearDays = listOf(1),
                 categoryId = healthId
             )
         )

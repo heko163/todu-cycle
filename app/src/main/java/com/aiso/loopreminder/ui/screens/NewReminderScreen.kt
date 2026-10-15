@@ -93,9 +93,9 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
     var escalateMin by remember { mutableStateOf(60) }
     var persistent by remember { mutableStateOf(false) }
     var notes by remember { mutableStateOf("") }
-    var monthDay by remember { mutableStateOf(minOf(LocalDate.now().dayOfMonth, 31)) }
+    var monthDays by remember { mutableStateOf(setOf(minOf(LocalDate.now().dayOfMonth, 31))) }
     var yearMonth by remember { mutableStateOf(LocalDate.now().monthValue) }
-    var yearDay by remember { mutableStateOf(minOf(LocalDate.now().dayOfMonth, daysInMonth(LocalDate.now().monthValue))) }
+    var yearDays by remember { mutableStateOf(setOf(minOf(LocalDate.now().dayOfMonth, daysInMonth(LocalDate.now().monthValue)))) }
     var showTime by remember { mutableStateOf(false) }
     var categoryId by remember { mutableStateOf(0L) }
     var showCatDialog by remember { mutableStateOf(false) }
@@ -121,9 +121,9 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
             escalateMin = t.escalateIntervalMinutes
             persistent = t.persistentNotification
             notes = t.notes
-            monthDay = t.monthDay.coerceIn(1, 31)
+            monthDays = t.monthDays.map { it.coerceIn(1, 31) }.toSet()
             yearMonth = t.yearMonth.coerceIn(1, 12)
-            yearDay = t.yearDay.coerceIn(1, daysInMonth(yearMonth))
+            yearDays = t.yearDays.map { it.coerceIn(1, daysInMonth(yearMonth)) }.toSet()
             categoryId = t.categoryId
             initialized = true
         }
@@ -147,6 +147,11 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
                         // truth for whether we're editing — so a late-loading flow can never make
                         // us accidentally insert a duplicate.
                         val base = existing
+                        // 多选日期一个都没选时兜底到"今天"，避免保存出无日期的循环任务
+                        val mDays = if (recurrence == RecurrenceType.MONTHLY)
+                            (monthDays.ifEmpty { setOf(LocalDate.now().dayOfMonth) }).sorted() else listOf(1)
+                        val yDays = if (recurrence == RecurrenceType.YEARLY)
+                            (yearDays.ifEmpty { setOf(LocalDate.now().dayOfMonth) }).sorted() else listOf(1)
                         val task = Task(
                             id = if (editing) taskId!! else 0,
                             title = title.trim(),
@@ -157,9 +162,11 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
                             escalateEnabled = escalate,
                             escalateIntervalMinutes = escalateMin,
                             persistentNotification = persistent,
-                            monthDay = if (recurrence == RecurrenceType.MONTHLY) monthDay.coerceIn(1, 31) else 1,
+                            monthDay = mDays.first(),
+                            monthDays = mDays,
                             yearMonth = if (recurrence == RecurrenceType.YEARLY) yearMonth.coerceIn(1, 12) else 1,
-                            yearDay = if (recurrence == RecurrenceType.YEARLY) yearDay.coerceIn(1, daysInMonth(yearMonth)) else 1,
+                            yearDay = yDays.first(),
+                            yearDays = yDays,
                             notes = notes.trim(),
                             categoryId = categoryId,
                             createdAt = base?.createdAt ?: System.currentTimeMillis(),
@@ -232,7 +239,7 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
                 SectionCard {
                     Text("每月几日", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(16.dp))
                     Text(
-                        "可选 1–31 日；若当月无该日（如 2 月、小月），则在该月最后一天提醒",
+                        "可多选 1–31 日；若当月无该日（如 2 月、小月），则在该月最后一天提醒",
                         color = TextSecondary, fontSize = 12.sp,
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
                     )
@@ -242,7 +249,9 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         (1..31).forEach { d ->
-                            SelectableChip("${d}日", d == monthDay) { monthDay = d }
+                            SelectableChip("${d}日", d in monthDays) {
+                                monthDays = if (d in monthDays) monthDays - d else monthDays + d
+                            }
                         }
                     }
                 }
@@ -263,11 +272,12 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
                             SelectableChip(name, m == yearMonth) {
                                 yearMonth = m
                                 val maxD = daysInMonth(m)
-                                if (yearDay > maxD) yearDay = maxD
+                                yearDays = yearDays.filter { it <= maxD }.toSet()
+                                    .ifEmpty { setOf(minOf(LocalDate.now().dayOfMonth, maxD)) }
                             }
                         }
                     }
-                    Text("几日", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp))
+                    Text("几日（可多选）", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp))
                     val maxDay = daysInMonth(yearMonth)
                     FlowRow(
                         Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
@@ -275,7 +285,9 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         (1..maxDay).forEach { d ->
-                            SelectableChip("${d}日", d == yearDay) { yearDay = d }
+                            SelectableChip("${d}日", d in yearDays) {
+                                yearDays = if (d in yearDays) yearDays - d else yearDays + d
+                            }
                         }
                     }
                 }

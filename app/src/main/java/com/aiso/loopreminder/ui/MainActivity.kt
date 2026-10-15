@@ -19,6 +19,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import com.aiso.loopreminder.reminder.NotificationHelper
 import com.aiso.loopreminder.ui.screens.CalendarScreen
 import com.aiso.loopreminder.ui.screens.CategoryDetailScreen
@@ -58,13 +61,29 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // 主 tab 切换用纯淡入淡出（去掉默认 fade+scale 的缩放，避免"像新开窗口"的突兀感），200ms 干脆利落。
+                val tabEnter = fadeIn(tween(200))
+                val tabExit = fadeOut(tween(200))
+
                 NavHost(
                     navController = navController,
                     startDestination = "today",
                     modifier = Modifier.fillMaxSize().background(Cream)
                 ) {
-                    composable("today") { TodayScreen(navController, vm) }
-                    composable("categories") { CategoryScreen(navController, vm) }
+                    composable(
+                        "today",
+                        enterTransition = { tabEnter },
+                        exitTransition = { tabExit },
+                        popEnterTransition = { tabEnter },
+                        popExitTransition = { tabExit }
+                    ) { TodayScreen(navController, vm) }
+                    composable(
+                        "categories",
+                        enterTransition = { tabEnter },
+                        exitTransition = { tabExit },
+                        popEnterTransition = { tabEnter },
+                        popExitTransition = { tabExit }
+                    ) { CategoryScreen(navController, vm) }
                     composable("category/{catId}") { backStack ->
                         val id = backStack.arguments?.getString("catId")?.toLongOrNull() ?: 0L
                         CategoryDetailScreen(navController, vm, id)
@@ -74,7 +93,13 @@ class MainActivity : ComponentActivity() {
                         val id = backStack.arguments?.getString("taskId")?.toLongOrNull()
                         NewReminderScreen(navController, vm, id)
                     }
-                    composable("calendar") { CalendarScreen(navController, vm) }
+                    composable(
+                        "calendar",
+                        enterTransition = { tabEnter },
+                        exitTransition = { tabExit },
+                        popEnterTransition = { tabEnter },
+                        popExitTransition = { tabExit }
+                    ) { CalendarScreen(navController, vm) }
                     composable("detail/{taskId}") { backStack ->
                         val id = backStack.arguments?.getString("taskId")?.toLongOrNull() ?: 0L
                         TaskDetailScreen(navController, vm, id)

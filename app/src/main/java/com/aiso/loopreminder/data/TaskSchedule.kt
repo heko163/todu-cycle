@@ -12,9 +12,9 @@ fun effectiveDay(year: Int, month: Int, day: Int): Int =
 fun Task.firesOn(date: LocalDate): Boolean = when (recurrence) {
     RecurrenceType.DAILY -> true
     RecurrenceType.WEEKLY -> repeatDays.contains(date.dayOfWeek)
-    RecurrenceType.MONTHLY -> date.dayOfMonth == effectiveDay(date.year, date.monthValue, monthDay)
+    RecurrenceType.MONTHLY -> monthDays.any { date.dayOfMonth == effectiveDay(date.year, date.monthValue, it) }
     RecurrenceType.YEARLY ->
-        date.monthValue == yearMonth && date.dayOfMonth == effectiveDay(date.year, yearMonth, yearDay)
+        date.monthValue == yearMonth && yearDays.any { date.dayOfMonth == effectiveDay(date.year, yearMonth, it) }
 }
 
 /**

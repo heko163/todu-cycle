@@ -30,6 +30,6 @@ fun Task.recurrenceSummary(): String = when (recurrence) {
     RecurrenceType.WEEKLY ->
         if (repeatDays.isEmpty()) "每周"
         else "每周 " + repeatDays.sortedBy { it.value }.joinToString(" ") { WEEKDAY_CN[it] ?: it.name }
-    RecurrenceType.MONTHLY -> "每月 ${monthDay} 日"
-    RecurrenceType.YEARLY -> "每年 ${yearMonth} 月 ${yearDay} 日"
+    RecurrenceType.MONTHLY -> "每月 " + monthDays.sorted().joinToString("、") + " 日"
+    RecurrenceType.YEARLY -> "每年 ${yearMonth} 月 " + yearDays.sorted().joinToString("、") + " 日"
 }

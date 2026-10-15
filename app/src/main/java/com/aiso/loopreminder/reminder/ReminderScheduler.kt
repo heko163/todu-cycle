@@ -93,7 +93,7 @@ object ReminderScheduler {
                 generateSequence(now.toLocalDate()) { it.plusDays(1) }
                     .take(400)
                     .firstOrNull { d ->
-                        d.dayOfMonth == effectiveDay(d.year, d.monthValue, task.monthDay) && !at(d).isBefore(now)
+                        task.monthDays.any { d.dayOfMonth == effectiveDay(d.year, d.monthValue, it) } && !at(d).isBefore(now)
                     }
                     ?.let { at(it).toInstant().toEpochMilli() }
             }
@@ -103,7 +103,7 @@ object ReminderScheduler {
                     .take(400)
                     .firstOrNull { d ->
                         d.monthValue == task.yearMonth &&
-                            d.dayOfMonth == effectiveDay(d.year, task.yearMonth, task.yearDay) &&
+                            task.yearDays.any { d.dayOfMonth == effectiveDay(d.year, task.yearMonth, it) } &&
                             !at(d).isBefore(now)
                     }
                     ?.let { at(it).toInstant().toEpochMilli() }

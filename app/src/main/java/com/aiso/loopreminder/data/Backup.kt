@@ -44,6 +44,10 @@ object BackupUtil {
             o.put("monthDay", t.monthDay)
             o.put("yearMonth", t.yearMonth)
             o.put("yearDay", t.yearDay)
+            val mds = JSONArray(); t.monthDays.forEach { mds.put(it) }
+            o.put("monthDays", mds)
+            val yds = JSONArray(); t.yearDays.forEach { yds.put(it) }
+            o.put("yearDays", yds)
             o.put("advanceNoticeMinutes", t.advanceNoticeMinutes)
             o.put("reminderMode", t.reminderMode)
             o.put("escalateEnabled", t.escalateEnabled)
@@ -97,8 +101,10 @@ object BackupUtil {
                     timeMinuteOfDay = o.optInt("timeMinuteOfDay", 600),
                     repeatDays = days,
                     monthDay = o.optInt("monthDay", 1),
+                    monthDays = parseDays(o, "monthDays", "monthDay"),
                     yearMonth = o.optInt("yearMonth", 1),
                     yearDay = o.optInt("yearDay", 1),
+                    yearDays = parseDays(o, "yearDays", "yearDay"),
                     advanceNoticeMinutes = o.optInt("advanceNoticeMinutes", 0),
                     reminderMode = o.optString("reminderMode", "通知 + 声音"),
                     escalateEnabled = o.optBoolean("escalateEnabled", false),
@@ -114,6 +120,14 @@ object BackupUtil {
         }
         return BackupData(cats, tasks)
     }
+
+    /** 读取多选日期数组；旧版备份文件没有该数组时，回退到旧的单选字段。 */
+    private fun parseDays(o: JSONObject, arrayKey: String, singleKey: String): List<Int> {
+        val arr = o.optJSONArray(arrayKey) ?: return listOf(o.optInt(singleKey, 1))
+        val days = mutableListOf<Int>()
+        for (i in 0 until arr.length()) days.add(arr.getInt(i))
+        return if (days.isEmpty()) listOf(o.optInt(singleKey, 1)) else days
+    }
 }
 
 /**
@@ -125,8 +139,8 @@ fun Task.isDuplicateOf(other: Task): Boolean =
         recurrence == other.recurrence &&
         timeMinuteOfDay == other.timeMinuteOfDay &&
         repeatDays == other.repeatDays &&
-        monthDay == other.monthDay &&
+        monthDays == other.monthDays &&
         yearMonth == other.yearMonth &&
-        yearDay == other.yearDay &&
+        yearDays == other.yearDays &&
         notes == other.notes &&
         categoryId == other.categoryId
