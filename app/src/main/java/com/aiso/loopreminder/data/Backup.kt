@@ -48,6 +48,7 @@ object BackupUtil {
             o.put("monthDays", mds)
             val yds = JSONArray(); t.yearDays.forEach { yds.put(it) }
             o.put("yearDays", yds)
+            o.put("isLunar", t.isLunar)
             o.put("advanceNoticeMinutes", t.advanceNoticeMinutes)
             o.put("reminderMode", t.reminderMode)
             o.put("escalateEnabled", t.escalateEnabled)
@@ -105,6 +106,7 @@ object BackupUtil {
                     yearMonth = o.optInt("yearMonth", 1),
                     yearDay = o.optInt("yearDay", 1),
                     yearDays = parseDays(o, "yearDays", "yearDay"),
+                    isLunar = o.optBoolean("isLunar", false),
                     advanceNoticeMinutes = o.optInt("advanceNoticeMinutes", 0),
                     reminderMode = o.optString("reminderMode", "通知 + 声音"),
                     escalateEnabled = o.optBoolean("escalateEnabled", false),
@@ -142,5 +144,6 @@ fun Task.isDuplicateOf(other: Task): Boolean =
         monthDays == other.monthDays &&
         yearMonth == other.yearMonth &&
         yearDays == other.yearDays &&
+        isLunar == other.isLunar &&
         notes == other.notes &&
         categoryId == other.categoryId

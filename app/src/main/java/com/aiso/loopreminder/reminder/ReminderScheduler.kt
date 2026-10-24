@@ -8,7 +8,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.aiso.loopreminder.data.AppDatabase
 import com.aiso.loopreminder.data.RecurrenceType
-import com.aiso.loopreminder.data.effectiveDay
+import com.aiso.loopreminder.data.firesOn
 import com.aiso.loopreminder.data.shouldShowPersistent
 import com.aiso.loopreminder.data.Task
 import com.aiso.loopreminder.data.TaskDao
@@ -92,20 +92,14 @@ object ReminderScheduler {
             RecurrenceType.MONTHLY -> {
                 generateSequence(now.toLocalDate()) { it.plusDays(1) }
                     .take(400)
-                    .firstOrNull { d ->
-                        task.monthDays.any { d.dayOfMonth == effectiveDay(d.year, d.monthValue, it) } && !at(d).isBefore(now)
-                    }
+                    .firstOrNull { d -> task.firesOn(d) && !at(d).isBefore(now) }
                     ?.let { at(it).toInstant().toEpochMilli() }
             }
 
             RecurrenceType.YEARLY -> {
                 generateSequence(now.toLocalDate()) { it.plusDays(1) }
                     .take(400)
-                    .firstOrNull { d ->
-                        d.monthValue == task.yearMonth &&
-                            task.yearDays.any { d.dayOfMonth == effectiveDay(d.year, task.yearMonth, it) } &&
-                            !at(d).isBefore(now)
-                    }
+                    .firstOrNull { d -> task.firesOn(d) && !at(d).isBefore(now) }
                     ?.let { at(it).toInstant().toEpochMilli() }
             }
         }

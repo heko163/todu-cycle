@@ -62,6 +62,15 @@ object Seed {
                 yearMonth = 1,
                 yearDays = listOf(1),
                 categoryId = healthId
+            ),
+            Task(
+                title = "端午节提醒（农历）",
+                recurrence = RecurrenceType.YEARLY,
+                timeMinuteOfDay = 9 * 60,
+                yearMonth = 5,
+                yearDays = listOf(5),
+                isLunar = true,
+                notes = "演示「按农历」：每年农历五月初五提醒，与公历日期无关。"
             )
         )
         samples.forEach { dao.insert(it) }

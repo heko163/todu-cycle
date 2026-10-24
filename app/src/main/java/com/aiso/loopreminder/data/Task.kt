@@ -16,6 +16,7 @@ data class Task(
     val yearMonth: Int = 1,                         // 每年几月 (1-12)，用于 YEARLY
     val yearDay: Int = 1,                           // 兼容字段：YEARLY 主日（= yearDays.first()）
     val yearDays: List<Int> = listOf(1),            // 每年几日（可多选，1-31），用于 YEARLY
+    val isLunar: Boolean = false,                  // true 时 monthDays/yearMonth/yearDays 解释为农历；仅 MONTHLY/YEARLY 生效
     val advanceNoticeMinutes: Int = 0,             // 0 = no advance notice
     val reminderMode: String = "通知 + 声音",
     val escalateEnabled: Boolean = false,          // 未完成时持续提醒

@@ -4,6 +4,9 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 
+/** 农历换算工具。 */
+import com.aiso.loopreminder.data.LunarConverter
+
 /** Clamp a desired day-of-month to the actual last day of [year]-[month] (e.g. 31 -> 28/29/30). */
 fun effectiveDay(year: Int, month: Int, day: Int): Int =
     minOf(day, YearMonth.of(year, month).lengthOfMonth())
@@ -12,9 +15,20 @@ fun effectiveDay(year: Int, month: Int, day: Int): Int =
 fun Task.firesOn(date: LocalDate): Boolean = when (recurrence) {
     RecurrenceType.DAILY -> true
     RecurrenceType.WEEKLY -> repeatDays.contains(date.dayOfWeek)
-    RecurrenceType.MONTHLY -> monthDays.any { date.dayOfMonth == effectiveDay(date.year, date.monthValue, it) }
-    RecurrenceType.YEARLY ->
+    RecurrenceType.MONTHLY -> if (isLunar) {
+        // 农历每月 X 日：每个农历月（含闰月）的对应日都触发。
+        val l = LunarConverter.toLunar(date)
+        monthDays.any { l.day == it }
+    } else {
+        monthDays.any { date.dayOfMonth == effectiveDay(date.year, date.monthValue, it) }
+    }
+    RecurrenceType.YEARLY -> if (isLunar) {
+        // 农历每年 X 月 X 日：仅正常月触发，闰月不触发（如「农历五月初五」不含闰五月）。
+        val l = LunarConverter.toLunar(date)
+        l.month == yearMonth && !l.isLeap && yearDays.any { l.day == it }
+    } else {
         date.monthValue == yearMonth && yearDays.any { date.dayOfMonth == effectiveDay(date.year, yearMonth, it) }
+    }
 }
 
 /**

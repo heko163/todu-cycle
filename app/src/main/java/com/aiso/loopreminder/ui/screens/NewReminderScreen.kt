@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.aiso.loopreminder.data.CATEGORY_PALETTE
 import com.aiso.loopreminder.data.Category
+import com.aiso.loopreminder.data.LunarConverter
 import com.aiso.loopreminder.data.RecurrenceType
 import com.aiso.loopreminder.data.Task
 import com.aiso.loopreminder.ui.components.IntervalSelector
@@ -96,6 +97,7 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
     var monthDays by remember { mutableStateOf(setOf(minOf(LocalDate.now().dayOfMonth, 31))) }
     var yearMonth by remember { mutableStateOf(LocalDate.now().monthValue) }
     var yearDays by remember { mutableStateOf(setOf(minOf(LocalDate.now().dayOfMonth, daysInMonth(LocalDate.now().monthValue)))) }
+    var isLunar by remember { mutableStateOf(false) }
     var showTime by remember { mutableStateOf(false) }
     var categoryId by remember { mutableStateOf(0L) }
     var showCatDialog by remember { mutableStateOf(false) }
@@ -121,9 +123,10 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
             escalateMin = t.escalateIntervalMinutes
             persistent = t.persistentNotification
             notes = t.notes
-            monthDays = t.monthDays.map { it.coerceIn(1, 31) }.toSet()
+            monthDays = t.monthDays.map { it.coerceIn(1, if (t.isLunar) 30 else 31) }.toSet()
             yearMonth = t.yearMonth.coerceIn(1, 12)
-            yearDays = t.yearDays.map { it.coerceIn(1, daysInMonth(yearMonth)) }.toSet()
+            yearDays = t.yearDays.map { it.coerceIn(1, if (t.isLunar) 30 else daysInMonth(yearMonth)) }.toSet()
+            isLunar = t.isLunar
             categoryId = t.categoryId
             initialized = true
         }
@@ -167,6 +170,7 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
                             yearMonth = if (recurrence == RecurrenceType.YEARLY) yearMonth.coerceIn(1, 12) else 1,
                             yearDay = yDays.first(),
                             yearDays = yDays,
+                            isLunar = isLunar && (recurrence == RecurrenceType.MONTHLY || recurrence == RecurrenceType.YEARLY),
                             notes = notes.trim(),
                             categoryId = categoryId,
                             createdAt = base?.createdAt ?: System.currentTimeMillis(),
@@ -237,20 +241,38 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
             if (recurrence == RecurrenceType.MONTHLY) {
                 Spacer(Modifier.height(12.dp))
                 SectionCard {
-                    Text("每月几日", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(16.dp))
+                    SwitchRow(
+                        "按农历",
+                        "按农历日期循环，如农历每月初一",
+                        isLunar
+                    ) { checked ->
+                        isLunar = checked
+                        if (checked) monthDays = monthDays.filter { d -> d <= 30 }.toSet().ifEmpty { setOf(1) }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(if (isLunar) "农历每月几日" else "每月几日", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
                     Text(
-                        "可多选 1–31 日；若当月无该日（如 2 月、小月），则在该月最后一天提醒",
+                        if (isLunar) "可多选农历 1–30 日；每个农历月（含闰月）的对应日都会提醒"
+                        else "可多选 1–31 日；若当月无该日（如 2 月、小月），则在该月最后一天提醒",
                         color = TextSecondary, fontSize = 12.sp,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
                     )
                     FlowRow(
                         Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        (1..31).forEach { d ->
-                            SelectableChip("${d}日", d in monthDays) {
-                                monthDays = if (d in monthDays) monthDays - d else monthDays + d
+                        if (isLunar) {
+                            (1..30).forEach { d ->
+                                SelectableChip(LunarConverter.lunarDayText(d), d in monthDays) {
+                                    monthDays = if (d in monthDays) monthDays - d else monthDays + d
+                                }
+                            }
+                        } else {
+                            (1..31).forEach { d ->
+                                SelectableChip("${d}日", d in monthDays) {
+                                    monthDays = if (d in monthDays) monthDays - d else monthDays + d
+                                }
                             }
                         }
                     }
@@ -260,32 +282,55 @@ fun NewReminderScreen(navController: NavController, vm: TaskViewModel, taskId: L
             if (recurrence == RecurrenceType.YEARLY) {
                 Spacer(Modifier.height(12.dp))
                 SectionCard {
-                    Text("每年几月", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(16.dp))
+                    SwitchRow(
+                        "按农历",
+                        "按农历日期循环，如农历五月初五",
+                        isLunar
+                    ) { checked ->
+                        isLunar = checked
+                        if (checked) {
+                            yearDays = yearDays.filter { d -> d <= 30 }.toSet().ifEmpty { setOf(1) }
+                        } else {
+                            val maxD = daysInMonth(yearMonth)
+                            yearDays = yearDays.filter { it <= maxD }.toSet().ifEmpty { setOf(minOf(LocalDate.now().dayOfMonth, maxD)) }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(if (isLunar) "农历每年几月" else "每年几月", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 16.dp))
                     FlowRow(
-                        Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                        Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        val monthNames = listOf("1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月")
-                        monthNames.forEachIndexed { idx, name ->
-                            val m = idx + 1
-                            SelectableChip(name, m == yearMonth) {
-                                yearMonth = m
-                                val maxD = daysInMonth(m)
-                                yearDays = yearDays.filter { it <= maxD }.toSet()
-                                    .ifEmpty { setOf(minOf(LocalDate.now().dayOfMonth, maxD)) }
+                        if (isLunar) {
+                            (1..12).forEach { m ->
+                                SelectableChip(LunarConverter.lunarMonthShort(m), m == yearMonth) {
+                                    yearMonth = m
+                                    yearDays = yearDays.filter { d -> d <= 30 }.toSet().ifEmpty { setOf(1) }
+                                }
+                            }
+                        } else {
+                            val monthNames = listOf("1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月")
+                            monthNames.forEachIndexed { idx, name ->
+                                val m = idx + 1
+                                SelectableChip(name, m == yearMonth) {
+                                    yearMonth = m
+                                    val maxD = daysInMonth(m)
+                                    yearDays = yearDays.filter { it <= maxD }.toSet()
+                                        .ifEmpty { setOf(minOf(LocalDate.now().dayOfMonth, maxD)) }
+                                }
                             }
                         }
                     }
                     Text("几日（可多选）", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp))
-                    val maxDay = daysInMonth(yearMonth)
+                    val maxDay = if (isLunar) 30 else daysInMonth(yearMonth)
                     FlowRow(
                         Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         (1..maxDay).forEach { d ->
-                            SelectableChip("${d}日", d in yearDays) {
+                            SelectableChip(if (isLunar) LunarConverter.lunarDayText(d) else "${d}日", d in yearDays) {
                                 yearDays = if (d in yearDays) yearDays - d else yearDays + d
                             }
                         }

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.aiso.loopreminder.data.LunarConverter
 import com.aiso.loopreminder.data.firesOn
 import com.aiso.loopreminder.ui.components.TaskCard
 import com.aiso.loopreminder.ui.navigation.LoopBottomBar
@@ -112,7 +113,8 @@ fun CalendarScreen(navController: NavController, vm: TaskViewModel) {
                     val day = i + 1
                     val date = LocalDate.of(monthDate.year, monthDate.month, day)
                     val dots = tasks.count { it.firesOn(date) }
-                    DayCell(day, date == today, dots, date == selected) { selected = date }
+                    val lunar = LunarConverter.dayText(LunarConverter.toLunar(date))
+                    DayCell(day, lunar, date == today, dots, date == selected) { selected = date }
                 }
             }
 
@@ -139,7 +141,7 @@ fun CalendarScreen(navController: NavController, vm: TaskViewModel) {
 }
 
 @Composable
-private fun DayCell(day: Int, isToday: Boolean, dotCount: Int, isSelected: Boolean, onClick: () -> Unit) {
+private fun DayCell(day: Int, lunarText: String, isToday: Boolean, dotCount: Int, isSelected: Boolean, onClick: () -> Unit) {
     val bg = if (isToday) Primary else androidx.compose.ui.graphics.Color.Transparent
     val fg = if (isToday) Surface else TextPrimary
     Column(
@@ -147,13 +149,14 @@ private fun DayCell(day: Int, isToday: Boolean, dotCount: Int, isSelected: Boole
             .let { m -> if (isSelected && !isToday) m.border(1.5.dp, Primary, RoundedCornerShape(10.dp)) else m }
             .background(bg)
             .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(day.toString(), color = fg, fontSize = 14.sp, fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal)
+        Text(day.toString(), color = fg, fontSize = 13.sp, fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal)
+        Text(lunarText, color = if (isToday) Surface else TextSecondary, fontSize = 9.sp)
         if (dotCount > 0) {
-            Spacer(Modifier.height(4.dp))
-            Box(Modifier.size(6.dp).background(if (isToday) Surface else Primary, RoundedCornerShape(999.dp)))
+            Spacer(Modifier.height(2.dp))
+            Box(Modifier.size(5.dp).background(if (isToday) Surface else Primary, RoundedCornerShape(999.dp)))
         }
     }
 }
